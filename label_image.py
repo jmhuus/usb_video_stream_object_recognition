@@ -14,54 +14,20 @@
 # ==============================================================================
 """label_image for tflite."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import argparse
 import time
 
 import numpy as np
 from PIL import Image
-import tensorflow as tf # TF2
+import tflite_runtime.interpreter as tflite
 
 
 def load_labels(filename):
   with open(filename, 'r') as f:
     return [line.strip() for line in f.readlines()]
 
+def get_labels(image, model_path, labels_path):
 
-if __name__ == '__main__':
-  parser = argparse.ArgumentParser()
-  parser.add_argument(
-      '-i',
-      '--image',
-      default='/tmp/grace_hopper.bmp',
-      help='image to be classified')
-  parser.add_argument(
-      '-m',
-      '--model_file',
-      default='/tmp/mobilenet_v1_1.0_224_quant.tflite',
-      help='.tflite model to be executed')
-  parser.add_argument(
-      '-l',
-      '--label_file',
-      default='/tmp/labels.txt',
-      help='name of file containing labels')
-  parser.add_argument(
-      '--input_mean',
-      default=127.5, type=float,
-      help='input_mean')
-  parser.add_argument(
-      '--input_std',
-      default=127.5, type=float,
-      help='input standard deviation')
-  parser.add_argument(
-      '--num_threads', default=None, type=int, help='number of threads')
-  args = parser.parse_args()
-
-  interpreter = tf.lite.Interpreter(
-      model_path=args.model_file)
+  interpreter = tflite.Interpreter(model_path=model_path)
   interpreter.allocate_tensors()
 
   input_details = interpreter.get_input_details()
@@ -70,16 +36,20 @@ if __name__ == '__main__':
   # check the type of the input tensor
   floating_model = input_details[0]['dtype'] == np.float32
 
+  # Original image shape
+  orig_height = image.height
+  orig_width = image.width
+
   # NxHxWxC, H:1, W:2
   height = input_details[0]['shape'][1]
   width = input_details[0]['shape'][2]
-  img = Image.open(args.image).resize((width, height))
+  img = image.resize((width, height))
 
   # add N dim
   input_data = np.expand_dims(img, axis=0)
 
   if floating_model:
-    input_data = (np.float32(input_data) - args.input_mean) / args.input_std
+    input_data = (np.float32(input_data) - 127.5) / 127.5
 
   interpreter.set_tensor(input_details[0]['index'], input_data)
 
@@ -93,8 +63,33 @@ if __name__ == '__main__':
   scores = interpreter.get_tensor(output_details[2]['index'])[0]
   number_of_detections = interpreter.get_tensor(output_details[3]['index'])[0]
 
-  labels = load_labels(args.label_file)
+  labels = load_labels(labels_path)
 
+  # TEST
   for i in range(len(classes)):
-      if scores[i] >= 0.65:
-          print(labels[classes[i]+1], scores[i])
+    if scores[i] >= 0.65:
+      print("{} {} {} {} {}".format(labels[classes[i]+1], locations[i][0], locations[i][1], locations[i][2], locations[i][3]))
+  width_compression = orig_width/width
+  height_compression = orig_height/height
+  objects = []
+  for i in range(len(classes)):
+    detected_object = {}
+    if scores[i] >= 0.65:
+      detected_object["class"] = labels[classes[i]+1]
+      detected_object["score"] = scores[i]
+      detected_object["location"] = \
+        (
+          locations[i][1]*orig_width, \
+          locations[i][0]*orig_height, \
+          locations[i][3]*orig_width, \
+          locations[i][2]*orig_height \
+        )
+
+    if detected_object:
+      objects.append(detected_object)
+
+  return objects
+    
+    
+
+  
