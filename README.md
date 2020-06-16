@@ -8,3 +8,6 @@ This is a simple application that uses a USB video stream, such as a webcam, and
 * OpenCv
     * Video streaming module
 * Local OS - Lubuntu
+
+
+* Be sure to change tflite_runtime in requirements.txt to match your target OS. I'm using Ubuntu to run this program on an edge device.

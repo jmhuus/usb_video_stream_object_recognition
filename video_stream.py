@@ -13,6 +13,7 @@ def start_video_stream(camera_id, image_recognizer):
         # our operations on the frame come here
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         img = Image.fromarray(np.uint8(frame))
+        img = pre_process_image(img)
         img = np.array(image_recognizer.classify_image(img))
         
         # Display the resulting frame
@@ -23,7 +24,25 @@ def start_video_stream(camera_id, image_recognizer):
     # When everything is done, release the capture
     cap.release()
     cv2.destroyAllWindows()
-        
+
+def pre_process_image(image):
+    # Color
+    color_enhancer = ImageEnhance.Color(img)
+    img = color_enhancer.enhance(0.5)
+    
+    # Sharpness
+    sharp_enhancer = ImageEnhance.Sharpness(img)
+    img = sharp_enhancer.enhance(1.5)
+    
+    # Brightness 
+    brightness_enhancer = ImageEnhance.Brightness(img)
+    img = brightness_enhancer.enhance(1.5)
+    
+    # Contrast
+    contrast_enhancer = ImageEnhance.Contrast(img)
+    img = contrast_enhancer.enhance(0.8)
+
+    return img        
 
 class ImageRecognizer:
     def __init__(self, filter_for_labels):
