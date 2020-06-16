@@ -74,6 +74,11 @@ def get_labels(image, model_path, labels_path, filter_for_labels):
   height_compression = orig_height/height
   objects = []
   for i in range(len(classes)):
+
+    object_height = (locations[i][0]*orig_height)-(locations[i][2]*orig_height)
+    object_width = (locations[i][1]*orig_width)-(locations[i][3]*orig_width)
+    print(f"height: {object_height} width: {object_width}")
+    
     detected_object = {}
     if scores[i] >= 0.35 and labels[classes[i]+1] in filter_for_labels:
       detected_object["class"] = labels[classes[i]+1]
