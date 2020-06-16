@@ -25,7 +25,7 @@ def load_labels(filename):
   with open(filename, 'r') as f:
     return [line.strip() for line in f.readlines()]
 
-def get_labels(image, model_path, labels_path):
+def get_labels(image, model_path, labels_path, filter_for_labels):
 
   interpreter = tflite.Interpreter(model_path=model_path)
   interpreter.allocate_tensors()
@@ -65,16 +65,17 @@ def get_labels(image, model_path, labels_path):
 
   labels = load_labels(labels_path)
 
-  # TEST
-  for i in range(len(classes)):
-    if scores[i] >= 0.65:
-      print("{} {} {} {} {}".format(labels[classes[i]+1], locations[i][0], locations[i][1], locations[i][2], locations[i][3]))
+  # # TEST
+  # for i in range(len(classes)):
+  #   if scores[i] >= 0.65:
+  #     print("{} {} {} {} {}".format(labels[classes[i]+1], locations[i][0], locations[i][1], locations[i][2], locations[i][3]))
+
   width_compression = orig_width/width
   height_compression = orig_height/height
   objects = []
   for i in range(len(classes)):
     detected_object = {}
-    if scores[i] >= 0.65:
+    if scores[i] >= 0.35 and labels[classes[i]+1] in filter_for_labels:
       detected_object["class"] = labels[classes[i]+1]
       detected_object["score"] = scores[i]
       detected_object["location"] = \
