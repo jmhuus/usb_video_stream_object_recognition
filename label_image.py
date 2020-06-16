@@ -65,7 +65,7 @@ def get_labels(image, model_path, labels_path, filter_for_labels):
 
   labels = load_labels(labels_path)
 
-  # # TEST
+  # # DEBUGGING CODE
   # for i in range(len(classes)):
   #   if scores[i] >= 0.65:
   #     print("{} {} {} {} {}".format(labels[classes[i]+1], locations[i][0], locations[i][1], locations[i][2], locations[i][3]))
@@ -74,12 +74,17 @@ def get_labels(image, model_path, labels_path, filter_for_labels):
   height_compression = orig_height/height
   objects = []
   for i in range(len(classes)):
-
-    object_height = (locations[i][0]*orig_height)-(locations[i][2]*orig_height)
-    object_width = (locations[i][1]*orig_width)-(locations[i][3]*orig_width)
-    print(f"height: {object_height} width: {object_width}")
-    
     detected_object = {}
+
+    # Filter out objects that are obviously too large for this security setup
+    object_height = abs((locations[i][0]*orig_height)-(locations[i][2]*orig_height))
+    object_width = abs((locations[i][1]*orig_width)-(locations[i][3]*orig_width))
+    if labels[classes[i]+1] == "person" and (object_width >= 75 or object_height >= 100):
+      continue
+    elif object_width >= 400 or object_height >= 400:
+      continue
+
+    # Track objects that meet the final filtering criteria
     if scores[i] >= 0.35 and labels[classes[i]+1] in filter_for_labels:
       detected_object["class"] = labels[classes[i]+1]
       detected_object["score"] = scores[i]
@@ -90,6 +95,12 @@ def get_labels(image, model_path, labels_path, filter_for_labels):
           locations[i][3]*orig_width, \
           locations[i][2]*orig_height \
         )
+
+
+      # # DEBUGGING CODE
+      # object_height = (locations[i][0]*orig_height)-(locations[i][2]*orig_height)
+      # object_width = (locations[i][1]*orig_width)-(locations[i][3]*orig_width)
+      # print("{} height: {} width: {}".format(detected_object["class"], abs(object_height), abs(object_width)))
 
     if detected_object:
       objects.append(detected_object)
