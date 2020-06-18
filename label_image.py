@@ -15,7 +15,6 @@
 """label_image for tflite."""
 
 import time
-
 import numpy as np
 from PIL import Image
 import tflite_runtime.interpreter as tflite
@@ -25,7 +24,7 @@ def load_labels(filename):
   with open(filename, 'r') as f:
     return [line.strip() for line in f.readlines()]
 
-def get_labels(image, model_path, labels_path, filter_for_labels):
+def get_labels(image, model_path, labels_path, filter_for_labels, roi):
 
   interpreter = tflite.Interpreter(model_path=model_path)
   interpreter.allocate_tensors()
@@ -85,7 +84,7 @@ def get_labels(image, model_path, labels_path, filter_for_labels):
       continue
 
     # Track objects that meet the final filtering criteria
-    if scores[i] >= 0.35 and labels[classes[i]+1] in filter_for_labels:
+    if scores[i] >= 0.40 and labels[classes[i]+1] in filter_for_labels:
       detected_object["class"] = labels[classes[i]+1]
       detected_object["score"] = scores[i]
       detected_object["location"] = \
@@ -95,7 +94,15 @@ def get_labels(image, model_path, labels_path, filter_for_labels):
           locations[i][3]*orig_width, \
           locations[i][2]*orig_height \
         )
-
+      
+      # Check if the image is in the selected region of interest
+      # roi = left, top, right, bottom
+      x1 = detected_object["location"][0]
+      y1 = detected_object["location"][1]
+      x2 = detected_object["location"][2]
+      y2 = detected_object["location"][3]
+      if x1<roi[0] or y1<roi[1] or x2>(image.width-roi[2]) or y2>(image.height-roi[3]):
+        continue
 
       # # DEBUGGING CODE
       # object_height = (locations[i][0]*orig_height)-(locations[i][2]*orig_height)
@@ -104,6 +111,7 @@ def get_labels(image, model_path, labels_path, filter_for_labels):
 
     if detected_object:
       objects.append(detected_object)
+
 
   return objects
     
