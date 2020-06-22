@@ -84,7 +84,7 @@ def get_labels(image, model_path, labels_path, filter_for_labels, roi):
       continue
 
     # Track objects that meet the final filtering criteria
-    if scores[i] >= 0.40 and labels[classes[i]+1] in filter_for_labels:
+    if scores[i] >= 0.48 and labels[classes[i]+1] in filter_for_labels:
       detected_object["class"] = labels[classes[i]+1]
       detected_object["score"] = scores[i]
       detected_object["location"] = \

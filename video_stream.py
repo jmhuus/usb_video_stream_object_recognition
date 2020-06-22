@@ -89,7 +89,7 @@ class ImageRecognizer:
 
     def save_frame(self, image):
         # Save the image
-        time_now = time.gmtime(time.time())
+        time_now = time.localtime()
         str_time_now = \
             str(time_now.tm_year)+"_"+\
             str(time_now.tm_mon)+"_"+\
